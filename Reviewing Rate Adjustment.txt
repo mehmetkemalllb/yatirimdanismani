@@ -1,0 +1,15 @@
+Reviewing Rate Adjustment
+
+I'm currently focused on the feasibility of letting the user manually adjust the Dollar Exchange Rate in the HTML application. The system is currently using a static exchange rate, but the goal is dynamic adjustment. I'm exploring the best way to integrate a user input for this value without disrupting the existing framework. I'm thinking about UI elements and data flow.
+
+Integrating Dynamic Rates
+
+I've been analyzing the existing code to integrate dynamic rates. I've pinpointed the RATE_OFFICE and RATE_BANK constants, and the insurance cost calculation. My focus is on creating a ratio between the user-input market rate and these existing rates, or simply deriving them from the input. I need to maintain the relative differences from the prompt; e.g. the 0.20 TL difference between the exchange office and bank rates. I'm leaning toward treating the input as the "Market Rate" and calculating the others based on a fixed differential.
+
+Scaling Insurance Premiums
+
+My latest focus has been on accurately scaling the insurance premiums. I've calculated the insurance base rate's ratio to the market rate, which is approximately 0.876. I plan to implement this logic so that when the user adjusts the Dollar rate, the insurance offer scales accordingly, maintaining consistency with the original prompt. The goal is to keep it single. I'm also preparing for UI and code updates to facilitate this dynamic behavior.
+
+Designing HTML Integration
+
+Now, I'm working on the HTML integration. I'll maintain the existing theme and ensure the contact info remains accessible. The goal is a user-friendly way to input the MarketRate. I'll focus on styling and layout to ensure the rate adjustment is intuitive. The underlying calculations for OfficeRate, BankRate, and InsuranceBaseRate are locked down; these will update dynamically based on the HTML input.
