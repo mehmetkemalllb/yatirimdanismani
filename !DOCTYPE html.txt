@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Akıllı Dolar Birikim ve Arbitraj Hesaplayıcı</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800">
+
+    <nav class="bg-blue-900 text-white p-4 shadow-lg">
+        <div class="container mx-auto flex justify-between items-center">
+            <div class="flex items-center space-x-2">
+                <span class="text-2xl">🛡️</span>
+                <h1 class="text-xl font-bold tracking-wide">Finansal Gelecek Simülasyonu</h1>
+            </div>
+            <div class="text-sm opacity-80">Döviz vs. Vergi Avantajlı Sigorta</div>
+        </div>
+    </nav>
+
+    <div class="container mx-auto p-4 lg:p-8">
+        
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-8">
+            
+            <div class="lg:col-span-4 glass-panel p-6 rounded-2xl shadow-sm">
+                <h2 class="text-lg font-bold text-slate-700 mb-4 border-b pb-2">⚙️ Senaryo Ayarları</h2>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-600 mb-1">Aylık Dolar Hedefi ($)</label>
+                        <input type="number" id="monthlyTarget" value="500" class="w-full p-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none font-bold text-blue-900">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-slate-600 mb-1">Güncel Dolar Kuru (TL)</label>
+                        <input type="number" id="marketRate" value="43.30" step="0.01" class="w-full p-2 border border-slate-300 rounded-lg outline-none">
+                    </div>
+
+                    <div class="bg-blue-50 p-3 rounded-lg border border-blue-100">
+                        <label class="block text-sm font-medium text-blue-800 mb-1">Vergi Dilimi (Avantaj) %</label>
+                        <input type="range" id="taxRate" min="15" max="40" value="27" class="w-full h-2 bg-blue-200 rounded-lg appearance-none cursor-pointer">
+                        <div class="flex justify-between text-xs text-blue-600 font-bold mt-1">
+                            <span>%15</span>
+                            <span id="taxRateDisplay">%27</span>
+                            <span>%40</span>
+                        </div>
+                    </div>
+
+                    <div class="bg-green-50 p-3 rounded-lg border border-green-100">
+                        <label class="block text-sm font-medium text-green-800 mb-1">Eurobond Yıllık Getiri % (Dolar Bazlı)</label>
+                        <input type="range" id="eurobondRate" min="0" max="8" value="4" step="0.5" class="w-full h-2 bg-green-200 rounded-lg appearance-none cursor-pointer">
+                        <div class="text-right text-xs text-green-600 font-bold mt-1" id="eurobondRateDisplay">%4.0</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="lg:col-span-8 grid grid-cols-1 md:grid-cols-3 gap-4">
+                
+                <div class="bg-white p-6 rounded-2xl shadow-sm border-t-4 border-gray-400 flex flex-col justify-between">
+                    <div>
+                        <div class="text-gray-500 text-sm font-semibold uppercase">Döviz Bürosu / Banka</div>
+                        <div class="mt-2 text-3xl font-bold text-gray-800" id="costCash">0 TL</div>
+                        <div class="text-xs text-gray-400 mt-1">1 Dolar Maliyeti</div>
+                    </div>
+                    <div class="mt-4 text-sm text-gray-500">
+                        Spread (Alım-Satım) farkı ve vergi avantajı yok.
+                    </div>
+                </div>
+
+                <div class="bg-gradient-to-br from-blue-600 to-blue-800 text-white p-6 rounded-2xl shadow-lg border-t-4 border-blue-400 flex flex-col justify-between transform hover:scale-105 transition duration-300">
+                    <div>
+                        <div class="text-blue-100 text-sm font-semibold uppercase flex items-center gap-2">
+                            Hayat Sigortası + Eurobond
+                            <span class="bg-green-400 text-green-900 text-[10px] px-2 py-0.5 rounded-full font-bold">ÖNERİLEN</span>
+                        </div>
+                        <div class="mt-2 text-4xl font-bold" id="costInsurance">0 TL</div>
+                        <div class="text-xs text-blue-200 mt-1">1 Doların Size Net Maliyeti</div>
+                    </div>
+                    <div class="mt-4 text-sm text-blue-100 bg-blue-900/30 p-2 rounded">
+                        <span class="font-bold text-green-300" id="discountDisplay">%27</span> daha ucuza dolar alımı + faiz getirisi.
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-2xl shadow-sm border-t-4 border-green-500 flex flex-col justify-between">
+                    <div>
+                        <div class="text-green-600 text-sm font-semibold uppercase">5 Yılda Ekstra Kazanç</div>
+                        <div class="mt-2 text-3xl font-bold text-green-600" id="totalGain">0 $</div>
+                        <div class="text-xs text-gray-400 mt-1">Sadece sistem farkından doğan gelir</div>
+                    </div>
+                    <div class="mt-4">
+                        <button onclick="document.getElementById('detailSection').scrollIntoView({behavior: 'smooth'})" class="w-full py-2 bg-green-50 text-green-700 font-bold rounded hover:bg-green-100 transition">Detayları Gör ↓</button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <div id="detailSection" class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            
+            <div class="bg-white p-6 rounded-2xl shadow-sm">
+                <h3 class="text-lg font-bold text-slate-700 mb-4">💰 5 Yıllık Birikim Projeksiyonu (Dolar $)</h3>
+                <canvas id="projectionChart"></canvas>
+            </div>
+
+            <div class="bg-white p-6 rounded-2xl shadow-sm overflow-hidden">
+                <h3 class="text-lg font-bold text-slate-700 mb-4">📊 Yıllık Detaylı Tablo</h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm text-left">
+                        <thead class="bg-slate-100 text-slate-600 font-bold uppercase text-xs">
+                            <tr>
+                                <th class="p-3 rounded-l-lg">Yıl</th>
+                                <th class="p-3">Yastık Altı ($)</th>
+                                <th class="p-3 text-blue-700 bg-blue-50">Sigorta + Eurobond ($)</th>
+                                <th class="p-3 rounded-r-lg text-right">Fark ($)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="projectionTableBody" class="divide-y divide-slate-100">
+                            </tbody>
+                    </table>
+                </div>
+                <p class="text-xs text-slate-400 mt-4 italic">* Hesaplamalar tahmini kur ve getiri oranlarına dayanmaktadır. Vergi avantajı, gelir vergisi matrahından düşülerek hesaplanmıştır.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Elementleri Seç
+        const inputs = {
+            monthly: document.getElementById('monthlyTarget'),
+            rate: document.getElementById('marketRate'),
+            tax: document.getElementById('taxRate'),
+            eurobond: document.getElementById('eurobondRate')
+        };
+
+        const displays = {
+            tax: document.getElementById('taxRateDisplay'),
+            eurobond: document.getElementById('eurobondRateDisplay'),
+            costCash: document.getElementById('costCash'),
+            costInsurance: document.getElementById('costInsurance'),
+            discount: document.getElementById('discountDisplay'),
+            gain: document.getElementById('totalGain'),
+            table: document.getElementById('projectionTableBody')
+        };
+
+        let chartInstance = null;
+
+        // Hesaplama Fonksiyonu
+        function calculate() {
+            // Değerleri Al
+            const monthlyUSD = parseFloat(inputs.monthly.value);
+            const marketRate = parseFloat(inputs.rate.value);
+            const taxRate = parseInt(inputs.tax.value) / 100;
+            const eurobondRate = parseFloat(inputs.eurobond.value) / 100;
+
+            // UI Güncelleme (Slider Textleri)
+            displays.tax.innerText = `%${(taxRate * 100).toFixed(0)}`;
+            displays.eurobond.innerText = `%${(eurobondRate * 100).toFixed(1)}`;
+            displays.discount.innerText = `%${(taxRate * 100).toFixed(0)}`;
+
+            // 1. Maliyet Karşılaştırması (1 Dolar için)
+            const cashCost = marketRate;
+            // Vergi iadesi sonrası efektif maliyet: Kur * (1 - Vergi Dilimi)
+            const insuranceEffectiveCost = marketRate * (1 - taxRate);
+
+            displays.costCash.innerText = cashCost.toFixed(2) + " TL";
+            displays.costInsurance.innerText = insuranceEffectiveCost.toFixed(2) + " TL";
+
+            // 2. Projeksiyon Hesaplaması (5 Yıl)
+            let tableHTML = "";
+            let chartLabels = [];
+            let dataCash = [];
+            let dataInsurance = [];
+            
+            let accumulatedCash = 0;
+            let accumulatedInsurance = 0;
+            let totalPrincipal = 0;
+
+            for (let year = 1; year <= 5; year++) {
+                // Her yıl 12 ay ekleniyor
+                totalPrincipal += monthlyUSD * 12;
+                
+                // Yastık Altı: Sadece anapara birikir (Faiz 0 kabul edildi senaryo gereği)
+                accumulatedCash = totalPrincipal;
+
+                // Sigorta + Eurobond: 
+                // Önceki bakiye Eurobond ile değerlenir + Yeni yılın birikimi eklenir.
+                // Basitlik adına: Yıl başındaki paraya faiz işletiyoruz, yıl içi gelen paraya ortalama faiz.
+                // Daha basit model: Her yılın sonunda (Önceki Bakiye + Yıllık Yatırım) * (1 + Faiz)
+                // Ancak aylık yatırıldığı için bileşik faiz formülü karmaşıklaşır.
+                // Basit Simülasyon: Yıl sonunda toplu faiz işletelim.
+                
+                let yearlyInput = monthlyUSD * 12;
+                // Önceki birikim faizlenir + Yeni para (yıl ortasında girdiği için yarım faiz alabilir ama biz düz ekleyip faizleyelim)
+                // Finansal Yaklaşım (Future Value of Series):
+                // Bu simülasyonda kullanıcı basitlik istiyor:
+                // Her yıl biriken paranın üzerine Eurobond faizi ekleyelim.
+                
+                let previousBalance = year === 1 ? 0 : dataInsurance[year-2];
+                accumulatedInsurance = (previousBalance + yearlyInput) * (1 + eurobondRate);
+
+                // Fark
+                let diff = accumulatedInsurance - accumulatedCash;
+
+                // Tabloya Ekle
+                tableHTML += `
+                    <tr class="hover:bg-slate-50 transition">
+                        <td class="p-3 font-bold text-slate-700">${year}. Yıl</td>
+                        <td class="p-3 text-slate-600">${accumulatedCash.toLocaleString('en-US', {style: 'currency', currency: 'USD', maximumFractionDigits:0})}</td>
+                        <td class="p-3 text-blue-700 font-bold bg-blue-50">${accumulatedInsurance.toLocaleString('en-US', {style: 'currency', currency: 'USD', maximumFractionDigits:0})}</td>
+                        <td class="p-3 text-right text-green-600 font-bold">+${diff.toLocaleString('en-US', {style: 'currency', currency: 'USD', maximumFractionDigits:0})}</td>
+                    </tr>
+                `;
+
+                // Grafik Datası
+                chartLabels.push(`${year}. Yıl`);
+                dataCash.push(accumulatedCash);
+                dataInsurance.push(accumulatedInsurance);
+            }
+
+            displays.table.innerHTML = tableHTML;
+
+            // Toplam Kazanç Göstergesi (Son yıl farkı)
+            let finalDiff = dataInsurance[4] - dataCash[4];
+            displays.gain.innerText = "+" + finalDiff.toLocaleString('en-US', {style: 'currency', currency: 'USD', maximumFractionDigits:0});
+
+            // Grafik Çiz
+            updateChart(chartLabels, dataCash, dataInsurance);
+        }
+
+        function updateChart(labels, cashData, insuranceData) {
+            const ctx = document.getElementById('projectionChart').getContext('2d');
+            
+            if (chartInstance) {
+                chartInstance.destroy();
+            }
+
+            chartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Döviz Bürosu / Yastık Altı',
+                            data: cashData,
+                            backgroundColor: '#94a3b8', // Slate 400
+                            borderRadius: 4
+                        },
+                        {
+                            label: 'Sigorta + Eurobond',
+                            data: insuranceData,
+                            backgroundColor: '#2563eb', // Blue 600
+                            borderRadius: 4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { position: 'bottom' }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) { return '$' + value; }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Event Listener'lar
+        Object.values(inputs).forEach(input => {
+            input.addEventListener('input', calculate);
+        });
+
+        // İlk hesaplama
+        calculate();
+
+    </script>
+</body>
+</html>
